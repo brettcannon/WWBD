@@ -36,7 +36,6 @@ Calling out known issues can help limit users opening duplicate issues against y
 - https://code.visualstudio.com/api/extension-capabilities/common-capabilities#command for the command
 - https://code.visualstudio.com/api/extension-capabilities/common-capabilities#configuration to let projects specify what requirements files to install
 - https://code.visualstudio.com/api/extension-capabilities/common-capabilities#display-notifications to let the user know about things (?)
-- https://code.visualstudio.com/api/extension-capabilities/common-capabilities#output-channel to log output from script
 - https://code.visualstudio.com/api/extension-capabilities/common-capabilities#progress-api to let the user know that things are still happening
 
 -----------------------------------------------------------------------------------------------------------
