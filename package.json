@@ -37,8 +37,7 @@
     "commands": [
       {
         "command": "wwbd.setUpEnvironment",
-        "title": "Set Up Environment",
-        "when": "editorLangId == python"
+        "title": "Set Up Environment"
       }
     ]
   },
