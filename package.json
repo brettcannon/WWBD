@@ -26,6 +26,16 @@
   "extensionDependencies": [
     "ms-python.python"
   ],
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Requires file system access"
+    },
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Requires executing Python code"
+    }
+  },
   "categories": [
     "Other"
   ],
