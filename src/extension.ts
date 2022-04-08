@@ -4,16 +4,12 @@ import { stdout } from "node:process";
 import * as vscode from "vscode";
 import * as pvsc from "./pvsc";
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext): void {
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log('"wwbd" is now active!');
+// Store the location of the extension for accessing Python code.
+let extensionPath: string = "<set via activate()>";
 
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with registerCommand
-  // The commandId parameter must match the command field in package.json
+export function activate(context: vscode.ExtensionContext): void {
+  extensionPath = context.extensionPath;
+
   let disposable = vscode.commands.registerCommand(
     "wwbd.setUpEnvironment",
     setUpEnvironment
@@ -22,7 +18,6 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(disposable);
 }
 
-// this method is called when your extension is deactivated
 export function deactivate(): void {}
 
 async function pvscApi(): Promise<pvsc.IProposedExtensionAPI | undefined> {
@@ -67,13 +62,7 @@ async function setUpEnvironment(): Promise<void> {
 
   // TODO watch out for path type.
   const pyPath = selectedEnvPath.path;
-
-  console.log(`__dirname: ${__dirname}`);
-
-  const extensionDir = path.dirname(__dirname);
-  const pythonSrc = path.join(extensionDir, "python-src");
-
-  console.log(`python-src: ${pythonSrc}`);
+  const pythonSrc = path.join(extensionPath, "python-src");
 
   // TODO be smarter in the face of multi-root workspaces.
   const workspaceDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
