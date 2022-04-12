@@ -85,6 +85,7 @@ export interface IProposedExtensionAPI {
     getActiveEnvironmentPath(
       resource?: Resource
     ): Promise<EnvPathType | undefined>;
+
     /**
      * Returns details for the given interpreter. Details such as absolute interpreter path,
      * version, type (conda, pyenv, etc). Metadata such as `sysPrefix` can be found under
@@ -98,6 +99,7 @@ export interface IProposedExtensionAPI {
       path: string,
       options?: EnvironmentDetailsOptions
     ): Promise<EnvironmentDetails | undefined>;
+
     /**
      * Returns paths to environments that uniquely identifies an environment found by the extension
      * at the time of calling. This API will *not* trigger a refresh. If a refresh is going on it
@@ -108,14 +110,16 @@ export interface IProposedExtensionAPI {
      * whereas other envs can be identified using interpreter path.
      */
     getEnvironmentPaths(): Promise<EnvPathType[] | undefined>;
+
     /**
      * Sets the active environment path for the python extension for the resource. Configuration target
      * will always be the workspace folder.
      * @param path : Full path to environment folder or interpreter to set.
-     * @param resource : [optional] Uri of a file ro workspace to scope to a particular workspace
+     * @param resource : [optional] Uri of a file in the workspace to scope to a particular workspace
      *                   folder.
      */
     setActiveEnvironment(path: string, resource?: Resource): Promise<void>;
+
     /**
      * This API will re-trigger environment discovery. Extensions can wait on the returned
      * promise to get the updated environment list. If there is a refresh already going on
@@ -127,16 +131,19 @@ export interface IProposedExtensionAPI {
     refreshEnvironment(
       options?: RefreshEnvironmentsOptions
     ): Promise<EnvPathType[] | undefined>;
+
     /**
      * Returns a promise for the ongoing refresh. Returns `undefined` if there are no active
      * refreshes going on.
      */
     getRefreshPromise(): Promise<void> | undefined;
+
     /**
      * This event is triggered when the known environment list changes, like when a environment
      * is found, existing environment is removed, or some details changed on an environment.
      */
     onDidEnvironmentsChanged: Event<EnvironmentsChangedParams[]>;
+
     /**
      * This event is triggered when the active environment changes.
      */
