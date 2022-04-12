@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import pathlib
 
@@ -14,11 +15,13 @@ def main(argv):
     requirements_file = wwbd_venv.install_requirements(python_path, args.workspace)
 
     details = {
-        "executable": os.fspath(python_path),
-        "requirements file": os.fspath(requirements_file),
+        "executable": os.fsdecode(python_path),
+        "requirements file": os.fsdecode(requirements_file),
     }
 
-    # XXX print out details
+    print("<JSON>")
+    print(json.dumps(details))
+    print("</JSON>")
 
 
 if __name__ == "__main__":
