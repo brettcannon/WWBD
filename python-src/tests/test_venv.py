@@ -1,5 +1,6 @@
 import os
 import pathlib
+import subprocess
 
 import pytest
 
@@ -60,3 +61,25 @@ class TestRequirementsFilename:
         names = {"requirements.json", "no-requirements.txt"}
         with pytest.raises(ValueError):
             wwbd.venv.requirements_filename(names)
+
+
+class TestInstallRequirements:
+
+    def test_no_requirements(self, tmp_path):
+        python_path = wwbd.venv.create(tmp_path)
+        assert not wwbd.venv.install_requirements(python_path, tmp_path)
+
+    def test_requirements(self, tmp_path):
+        requirements_path = tmp_path / "requirements.txt"
+        with open(requirements_path, "w") as file:
+            file.write("packaging-classifiers==1.0.0rc5\n")
+        python_path = wwbd.venv.create(tmp_path)
+        installed_requirements = wwbd.venv.install_requirements(python_path,
+                                                                tmp_path)
+
+        assert requirements_path == installed_requirements
+
+        find_spec = "import importlib.util; import sys; sys.exit(importlib.util.find_spec('packaging_classifiers') is None)"
+        proc = subprocess.run([os.fsdecode(python_path), "-c", find_spec], check=True)
+
+        assert not proc.returncode

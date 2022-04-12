@@ -1,4 +1,3 @@
-# TODO Deal w/ the "Debian Problem"
 import os
 import subprocess
 import venv
@@ -17,6 +16,7 @@ def create(workspace):
     The prompt is set to the stem of the workspace path.
 
     """
+    # TODO deal w/ the "Debian problem"
     venv_path = workspace / ".venv"
     # TODO care if not a directory or not a virtual environment?
     if not venv_path.exists():
@@ -36,16 +36,23 @@ def requirements_filename(contents):
         if "requirements.txt" in contents:
             return "requirements.txt"
         else:
-            # TODO better exception?
             raise ValueError("no requirements file found in {contents!r}")
 
 
 def install_requirements(python_path, workspace):
+    """Find and install the most appropriate requirements file."""
+    # TODO deal with the "Debian problem"
+    workspace_contents = {path.name for path in workspace.iterdir()}
     try:
-        filename = requirements_filename(workspace.iterdir())
+        filename = requirements_filename(workspace_contents)
     except ValueError:
         return None
+    else:
+        requirements_path = workspace / filename
 
-    # XXX Execute pip
-    # TODO deal with the "Debian Problem"
-    pass
+    subprocess.run([os.fsdecode(python_path), "-m", "pip", "install",
+                    "--disable-pip-version-check", "--no-color",
+                    "--requirement", os.fsdecode(requirements_path)],
+                    check=True)
+
+    return requirements_path
