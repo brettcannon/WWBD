@@ -8,5 +8,10 @@
     },
     // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
     "typescript.tsc.autoDetect": "off",
-    "js/ts.implicitProjectConfig.strictNullChecks": true
+    "js/ts.implicitProjectConfig.strictNullChecks": true,
+    "python.testing.pytestArgs": [
+        "python-src/tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
