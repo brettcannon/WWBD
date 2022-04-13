@@ -1,5 +1,6 @@
 {
   "name": "wwbd",
+  "version": "0.0.1",
   "publisher": "brettcannon",
   "displayName": "WWBD",
   "description": "What Would Brett Do?",
@@ -15,7 +16,6 @@
     "url": "https://github.com/brettcannon/WWBD.git"
   },
   "license": "MIT",
-  "version": "0.0.1",
   "preview": true,
   "engines": {
     "vscode": "^1.66.0"
