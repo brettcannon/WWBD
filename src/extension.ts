@@ -19,7 +19,15 @@ export function activate(context: vscode.ExtensionContext): void {
 
   let disposable = vscode.commands.registerCommand(
     "wwbd.setUpEnvironment",
-    setUpEnvironment
+    () =>
+      vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: "Python Environment Setup",
+          cancellable: false,
+        },
+        setUpEnvironment
+      )
   );
 
   context.subscriptions.push(disposable);
@@ -48,9 +56,13 @@ async function pvscApi(): Promise<pvsc.IProposedExtensionAPI | undefined> {
   return pvscExtension.exports;
 }
 
-async function setUpEnvironment(): Promise<void> {
+async function setUpEnvironment(
+  progress: vscode.Progress<{ /* increment: number, */ message: string }>
+  //token: vscode.CancellationToken
+): Promise<void> {
   const outputChannel = vscode.window.createOutputChannel("WWBD");
 
+  progress.report({ message: "Activating the Python extension" });
   const pvsc = await pvscApi();
 
   if (pvsc === undefined) {
@@ -59,6 +71,7 @@ async function setUpEnvironment(): Promise<void> {
     return;
   }
 
+  progress.report({ message: "Getting the appropriate interpreter" });
   const selectedEnvPath = await pvsc.environment.getActiveEnvironmentPath();
 
   if (selectedEnvPath === undefined) {
@@ -80,8 +93,9 @@ async function setUpEnvironment(): Promise<void> {
     return;
   }
 
+  progress.report({ message: "Setting up the environment" });
   outputChannel.appendLine("Setting up the virtual environment ...");
-  // TODO make asynchronous: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processspawncommand-args-options
+  // TODO make asynchronous?: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processspawncommand-args-options
   const py = child_process.spawnSync(
     pyPath,
     [pythonSrc, "--workspace", workspaceDir],
