@@ -4,6 +4,13 @@ import { stdout } from "node:process";
 import * as vscode from "vscode";
 import * as pvsc from "./pvsc";
 
+const jsonTagRegex = /<JSON>\n(?<json>.+)\n<\/JSON>/;
+
+interface JsonPayload {
+  executable: string;
+  requirementsFile: string;
+}
+
 // Store the location of the extension for accessing Python code.
 let extensionPath: string = "<set via activate()>";
 
@@ -42,6 +49,8 @@ async function pvscApi(): Promise<pvsc.IProposedExtensionAPI | undefined> {
 }
 
 async function setUpEnvironment(): Promise<void> {
+  const outputChannel = vscode.window.createOutputChannel("WWBD");
+
   const pvsc = await pvscApi();
 
   if (pvsc === undefined) {
@@ -51,8 +60,6 @@ async function setUpEnvironment(): Promise<void> {
   }
 
   const selectedEnvPath = await pvsc.environment.getActiveEnvironmentPath();
-
-  vscode.window.showInformationMessage(`Hello from ${selectedEnvPath?.path}!`);
 
   if (selectedEnvPath === undefined) {
     // XXX decide what to do.
@@ -73,6 +80,7 @@ async function setUpEnvironment(): Promise<void> {
     return;
   }
 
+  outputChannel.appendLine("Setting up the virtual environment ...");
   // TODO make asynchronous: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processspawncommand-args-options
   const py = child_process.spawnSync(
     pyPath,
@@ -80,12 +88,19 @@ async function setUpEnvironment(): Promise<void> {
     { encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] }
   );
 
-  const outputChannel = vscode.window.createOutputChannel("WWBD");
   // TODO Build up stdout and stderr into a buffer dynamically to get proper interleaving.
   outputChannel.append(py.stdout);
   outputChannel.append(py.stderr);
 
-  outputChannel.show();
-  // XXX Parse stdout for details.
-  // XXX Set interpreter.
+  const jsonMatch = jsonTagRegex.exec(py.stdout);
+
+  if (jsonMatch === null || jsonMatch.groups === undefined) {
+    // XXX error
+    console.error("No JSON output found!");
+    return;
+  }
+
+  const details: JsonPayload = JSON.parse(jsonMatch.groups.json);
+
+  await pvsc.environment.setActiveEnvironment(details.executable);
 }
