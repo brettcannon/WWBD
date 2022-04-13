@@ -106,3 +106,4 @@ dist
 out/
 .venv/
 __pycache__/
+wwbd-*.vsix
