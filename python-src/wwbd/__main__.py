@@ -16,7 +16,7 @@ def main(argv):
 
     details = {
         "executable": os.fsdecode(python_path),
-        "requirementsFile": os.fsdecode(requirements_file),
+        "requirementsFile": os.fsdecode(requirements_file) if requirements_file else None,
     }
 
     print("<JSON>")

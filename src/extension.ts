@@ -8,7 +8,7 @@ const jsonTagRegex = /<JSON>\n(?<json>.+)\n<\/JSON>/;
 
 interface JsonPayload {
   executable: string;
-  requirementsFile: string;
+  requirementsFile: string | null;
 }
 
 // Store the location of the extension for accessing Python code.
