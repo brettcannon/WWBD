@@ -108,10 +108,16 @@ async function createEnvironment(
   progress.report({
     message: `> ${pyPath} ${command.join(" ")}`,
   });
+
+  // Create a custom environment variable collection to force Python to use UTF-8.
+  const pyEnv: NodeJS.ProcessEnv = {};
+  Object.assign(pyEnv, process.env);
+  pyEnv.PYTHONUTF8 = "1";
   // TODO make asynchronous?: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processspawncommand-args-options
   const py = child_process.spawnSync(pyPath, command, {
     encoding: "utf-8",
     stdio: ["ignore", "pipe", "pipe"],
+    env: pyEnv,
   });
 
   // TODO Build up stdout and stderr into a buffer dynamically to get proper interleaving.
