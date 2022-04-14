@@ -47,7 +47,8 @@
     "commands": [
       {
         "command": "wwbd.setUpEnvironment",
-        "title": "Set Up Environment"
+        "title": "Set Up Environment",
+        "category": "WWBD"
       }
     ]
   },
