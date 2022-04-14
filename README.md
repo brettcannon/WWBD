@@ -6,7 +6,7 @@ The project structure and user experience of this extension is **very opinionate
 
 ## Features
 
-### `Set Up Extension` command
+### `Create Extension` command
 
 1. Create a virtual environment in the workspace: `python -m venv .venv --prompt .`.
 2. Find the most appropriate requirements file (either by containing `dev` and `requirements` in the file name and ending in `.txt`, or `requirements.txt`).
@@ -31,5 +31,10 @@ N/A
 
 ## TODO
 
-- https://code.visualstudio.com/api/extension-capabilities/common-capabilities#configuration to let projects specify what requirements files to install
-- https://code.visualstudio.com/api/extension-capabilities/common-capabilities#display-notifications to let the user know about things (?)
+- Handle no interpreter pre-selected.
+- Handle a non-global interpreter already being selected.
+- Figure out how to handle multi-root workspaces.
+- Detect `$VIRTUAL_ENV` being set.
+- Create a conda environment from `environment.yml`.
+- Select a conda environment based on the name found in `environment.yml`.
+- Detect `CONDA_DEFAULT_ENV` being set.

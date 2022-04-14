@@ -40,14 +40,14 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:wwbd.setUpEnvironment"
+    "onCommand:wwbd.createEnvironment"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "wwbd.setUpEnvironment",
-        "title": "Set Up Environment",
+        "command": "wwbd.createEnvironment",
+        "title": "Create Environment",
         "category": "WWBD"
       }
     ]

@@ -18,15 +18,16 @@ export function activate(context: vscode.ExtensionContext): void {
   extensionPath = context.extensionPath;
 
   let disposable = vscode.commands.registerCommand(
-    "wwbd.setUpEnvironment",
+    "wwbd.createEnvironment",
     () =>
       vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
-          title: "Python Environment Setup",
+          title: "Python Environment Creation",
+          // XXX make it killable
           cancellable: false,
         },
-        setUpEnvironment
+        createEnvironment
       )
   );
 
@@ -56,7 +57,7 @@ async function pvscApi(): Promise<pvsc.IProposedExtensionAPI | undefined> {
   return pvscExtension.exports;
 }
 
-async function setUpEnvironment(
+async function createEnvironment(
   progress: vscode.Progress<{ /* increment: number, */ message: string }>
   //token: vscode.CancellationToken
 ): Promise<void> {
@@ -66,8 +67,7 @@ async function setUpEnvironment(
   const pvsc = await pvscApi();
 
   if (pvsc === undefined) {
-    // XXX Error
-    console.error("ms-python.python was not found!");
+    vscode.window.showErrorMessage("Unable to activate the Python extension.");
     return;
   }
 
@@ -75,12 +75,21 @@ async function setUpEnvironment(
   const selectedEnvPath = await pvsc.environment.getActiveEnvironmentPath();
 
   if (selectedEnvPath === undefined) {
-    // XXX decide what to do.
-    console.error("No selected environment!");
+    // XXX decide what to do; warn the user and offer to run the command on the user's behalf or quit?
+    vscode.window.showErrorMessage(
+      "No selected Python interpreter. Please run `Python: Select Interpreter` to select one."
+    );
     return;
+  } else if (selectedEnvPath.pathType !== "interpreterPath") {
+    // TODO do better.
+    vscode.window.showErrorMessage(
+      "Selected interpreter does not specify an interpreter path."
+    );
+    return;
+  } else {
+    outputChannel.appendLine(`interpreter: ${selectedEnvPath.path}`);
   }
 
-  // TODO watch out for path type.
   const pyPath = selectedEnvPath.path;
   const pythonSrc = path.join(extensionPath, "python-src");
 
@@ -88,33 +97,53 @@ async function setUpEnvironment(
   const workspaceDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 
   if (workspaceDir === undefined) {
-    // XXX error
-    console.error("No workspace directory found!");
+    // TODO some way to offer to let the user select a workspace?
+    vscode.window.showErrorMessage("No workspace selected.");
     return;
+  } else {
+    outputChannel.appendLine(`workspace: ${workspaceDir}`);
   }
 
-  progress.report({ message: "Setting up the environment" });
-  outputChannel.appendLine("Setting up the virtual environment ...");
+  const command = [pythonSrc, "--workspace", workspaceDir];
+  progress.report({
+    message: `> ${pyPath} ${command.join(" ")}`,
+  });
   // TODO make asynchronous?: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processspawncommand-args-options
-  const py = child_process.spawnSync(
-    pyPath,
-    [pythonSrc, "--workspace", workspaceDir],
-    { encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] }
-  );
+  const py = child_process.spawnSync(pyPath, command, {
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
 
   // TODO Build up stdout and stderr into a buffer dynamically to get proper interleaving.
   outputChannel.append(py.stdout);
   outputChannel.append(py.stderr);
 
+  if (py.error !== undefined) {
+    vscode.window.showErrorMessage(
+      `Error during environment creation: ${py.error.message} (${py.error.name}).`
+    );
+    return;
+  } else if (py.status !== 0) {
+    vscode.window.showErrorMessage(
+      `Error during environment creation (status code: ${py.status}).`
+    );
+    outputChannel.show();
+    return;
+  }
+
   const jsonMatch = jsonTagRegex.exec(py.stdout);
 
   if (jsonMatch === null || jsonMatch.groups === undefined) {
-    // XXX error
-    console.error("No JSON output found!");
+    vscode.window.showErrorMessage(
+      "Error during environment creation (JSON output missing)."
+    );
+    outputChannel.show();
     return;
   }
 
   const details: JsonPayload = JSON.parse(jsonMatch.groups.json);
 
   await pvsc.environment.setActiveEnvironment(details.executable);
+
+  outputChannel.appendLine("Success!");
 }
