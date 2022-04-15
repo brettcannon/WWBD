@@ -38,3 +38,5 @@ N/A
 - Create a conda environment from `environment.yml`.
 - Select a conda environment based on the name found in `environment.yml`.
 - Detect `CONDA_DEFAULT_ENV` being set.
+- Be able to cancel environment creation.
+- Write tests on the TypeScript side.
