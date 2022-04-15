@@ -11,12 +11,7 @@ interface JsonPayload {
   requirementsFile: string | null;
 }
 
-// Store the location of the extension for accessing Python code.
-let extensionPath: string = "<set via activate()>";
-
 export function activate(context: vscode.ExtensionContext): void {
-  extensionPath = context.extensionPath;
-
   let disposable = vscode.commands.registerCommand(
     "wwbd.createEnvironment",
     () =>
@@ -27,7 +22,8 @@ export function activate(context: vscode.ExtensionContext): void {
           // XXX make it killable
           cancellable: false,
         },
-        createEnvironment
+        (progress, token) =>
+          createEnvironment(context.extensionPath, progress, token)
       )
   );
 
@@ -58,8 +54,9 @@ async function pvscApi(): Promise<pvsc.IProposedExtensionAPI | undefined> {
 }
 
 async function createEnvironment(
-  progress: vscode.Progress<{ /* increment: number, */ message: string }>
-  //token: vscode.CancellationToken
+  extensionPath: string,
+  progress: vscode.Progress<{ /* increment: number, */ message: string }>,
+  _token: vscode.CancellationToken
 ): Promise<void> {
   const outputChannel = vscode.window.createOutputChannel("WWBD");
 
@@ -76,6 +73,8 @@ async function createEnvironment(
 
   if (selectedEnvPath === undefined) {
     // XXX decide what to do; warn the user and offer to run the command on the user's behalf or quit?
+    //     Custom picker of global interpreters and skip the notification?
+    //     Worry about `.venv` already existing.
     vscode.window.showErrorMessage(
       "No selected Python interpreter. Please run `Python: Select Interpreter` to select one."
     );
