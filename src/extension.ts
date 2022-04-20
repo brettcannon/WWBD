@@ -60,6 +60,7 @@ async function createEnvironment(
   progress: vscode.Progress<{ /* increment: number, */ message: string }>,
   _token: vscode.CancellationToken
 ): Promise<void> {
+  // XXX move out to prevent duplicate channels from being created
   const outputChannel = vscode.window.createOutputChannel("WWBD");
 
   // XXX break out sub-steps into separate functions. Return `undefined` as the error condition? What about UX?
@@ -118,26 +119,19 @@ async function createEnvironment(
     if (fs.existsSync(venvInterpreter)) {
       const selectEnvironmentButton = "Select Interpreter";
 
-      if (pyPath === venvInterpreter) {
-        vscode.window.showInformationMessage(
-          "A virtual environment at `.venv` already exists and has now been selected."
-        );
-        return;
-      } else {
-        vscode.window
-          .showWarningMessage(
-            "A virtual environment already exists at `.venv`.",
-            selectEnvironmentButton,
-            "Cancel"
-          )
-          .then((selected) => {
-            if (selected === selectEnvironmentButton) {
-              pvsc.environment.setActiveEnvironment(venvInterpreter);
-            }
-          });
+      vscode.window
+        .showWarningMessage(
+          "A virtual environment already exists at `.venv`.",
+          selectEnvironmentButton,
+          "Cancel"
+        )
+        .then((selected) => {
+          if (selected === selectEnvironmentButton) {
+            pvsc.environment.setActiveEnvironment(venvInterpreter);
+          }
+        });
 
-        return;
-      }
+      return;
     } else {
       vscode.window.showErrorMessage(
         "Cannot create virtual environment; `.venv` already exists."
