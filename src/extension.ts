@@ -63,7 +63,7 @@ async function createEnvironment(
   // XXX move out to prevent duplicate channels from being created
   const outputChannel = vscode.window.createOutputChannel("WWBD");
 
-  // XXX break out sub-steps into separate functions. Return `undefined` as the error condition? What about UX?
+  // XXX break out sub-steps into separate functions? Return `undefined` as the error condition? What about UX?
 
   // Get the workspace.
   // TODO be smarter in the face of multi-root workspaces.
@@ -86,25 +86,31 @@ async function createEnvironment(
     return;
   }
 
-  progress.report({ message: "Getting the appropriate interpreter" });
-  const selectedEnvPath = await pvsc.environment.getActiveEnvironmentPath();
+  progress.report({ message: "Getting the selected interpreter" });
+  let selectedEnvPath = await pvsc.environment.getActiveEnvironmentPath();
 
-  if (selectedEnvPath === undefined) {
-    // XXX decide what to do; warn the user and offer to run the command on the user's behalf or quit?
-    //     Custom picker of global interpreters and skip the notification?
-    vscode.window.showErrorMessage(
-      "No selected Python interpreter. Please run `Python: Select Interpreter` to select one."
+  while (
+    selectedEnvPath === undefined ||
+    selectedEnvPath.pathType !== "interpreterPath"
+  ) {
+    const selectInterpreterButton = "Select Interpreter";
+
+    const selected = await vscode.window.showWarningMessage(
+      "No Python interpreter selected.",
+      selectInterpreterButton,
+      "Cancel"
     );
-    return;
-  } else if (selectedEnvPath.pathType !== "interpreterPath") {
-    // TODO do better.
-    vscode.window.showErrorMessage(
-      "Selected interpreter does not specify an interpreter path."
-    );
-    return;
-  } else {
-    outputChannel.appendLine(`interpreter: ${selectedEnvPath.path}`);
+
+    if (selected === selectInterpreterButton) {
+      await vscode.commands.executeCommand("python.setInterpreter");
+      selectedEnvPath = await pvsc.environment.getActiveEnvironmentPath();
+      continue;
+    } else {
+      return;
+    }
   }
+
+  outputChannel.appendLine(`interpreter: ${selectedEnvPath.path}`);
 
   // Check that `.venv` does not already exist.
   const pyPath = selectedEnvPath.path;

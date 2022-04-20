@@ -31,13 +31,12 @@ N/A
 
 ## TODO
 
-- Handle no interpreter pre-selected.
 - Handle a non-global interpreter already being selected.
 - Handle empty workspace (create `requirements.txt` file w/ comment explaining what the file is for).
-- Figure out how to handle multi-root workspaces.
 - Detect `$VIRTUAL_ENV` being set.
 - Create a conda environment from `environment.yml`.
 - Select a conda environment based on the name found in `environment.yml`.
 - Detect `CONDA_DEFAULT_ENV` being set.
 - Be able to cancel environment creation.
 - Write tests on the TypeScript side.
+- Figure out how to handle multi-root workspaces.
