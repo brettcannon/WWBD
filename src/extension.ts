@@ -120,7 +120,7 @@ async function createEnvironment(
 
       if (pyPath === venvInterpreter) {
         vscode.window.showInformationMessage(
-          "A virtual environment at `.venv` already exists and is selected."
+          "A virtual environment at `.venv` already exists and has now been selected."
         );
         return;
       } else {
@@ -128,7 +128,7 @@ async function createEnvironment(
           .showWarningMessage(
             "A virtual environment already exists at `.venv`.",
             selectEnvironmentButton,
-            "OK"
+            "Cancel"
           )
           .then((selected) => {
             if (selected === selectEnvironmentButton) {
