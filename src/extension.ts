@@ -1,6 +1,7 @@
 import * as child_process from "node:child_process";
+import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
-import { stdout } from "node:process";
 import * as vscode from "vscode";
 import * as pvsc from "./pvsc";
 
@@ -15,6 +16,7 @@ export function activate(context: vscode.ExtensionContext): void {
   let disposable = vscode.commands.registerCommand(
     "wwbd.createEnvironment",
     () =>
+      // XXX only use progress when executing Python code
       vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
@@ -60,6 +62,21 @@ async function createEnvironment(
 ): Promise<void> {
   const outputChannel = vscode.window.createOutputChannel("WWBD");
 
+  // XXX break out sub-steps into separate functions. Return `undefined` as the error condition? What about UX?
+
+  // Get the workspace.
+  // TODO be smarter in the face of multi-root workspaces.
+  const workspaceDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+
+  if (workspaceDir === undefined) {
+    // TODO some way to offer to let the user select a workspace?
+    vscode.window.showErrorMessage("No workspace selected.");
+    return;
+  } else {
+    outputChannel.appendLine(`workspace: ${workspaceDir}`);
+  }
+
+  // Activate the Python extension.
   progress.report({ message: "Activating the Python extension" });
   const pvsc = await pvscApi();
 
@@ -74,7 +91,6 @@ async function createEnvironment(
   if (selectedEnvPath === undefined) {
     // XXX decide what to do; warn the user and offer to run the command on the user's behalf or quit?
     //     Custom picker of global interpreters and skip the notification?
-    //     Worry about `.venv` already existing.
     vscode.window.showErrorMessage(
       "No selected Python interpreter. Please run `Python: Select Interpreter` to select one."
     );
@@ -89,19 +105,49 @@ async function createEnvironment(
     outputChannel.appendLine(`interpreter: ${selectedEnvPath.path}`);
   }
 
+  // Check that `.venv` does not already exist.
   const pyPath = selectedEnvPath.path;
-  const pythonSrc = path.join(extensionPath, "python-src");
+  const venvDirectory = path.join(workspaceDir, ".venv");
 
-  // TODO be smarter in the face of multi-root workspaces.
-  const workspaceDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (fs.existsSync(venvDirectory)) {
+    const venvInterpreter =
+      os.platform() === "win32"
+        ? path.join(venvDirectory, "Scripts", "python.exe")
+        : path.join(venvDirectory, "bin", "python");
 
-  if (workspaceDir === undefined) {
-    // TODO some way to offer to let the user select a workspace?
-    vscode.window.showErrorMessage("No workspace selected.");
-    return;
-  } else {
-    outputChannel.appendLine(`workspace: ${workspaceDir}`);
+    if (fs.existsSync(venvInterpreter)) {
+      const selectEnvironmentButton = "Select Interpreter";
+
+      if (pyPath === venvInterpreter) {
+        vscode.window.showInformationMessage(
+          "A virtual environment at `.venv` already exists and is selected."
+        );
+        return;
+      } else {
+        vscode.window
+          .showWarningMessage(
+            "A virtual environment already exists at `.venv`.",
+            selectEnvironmentButton,
+            "OK"
+          )
+          .then((selected) => {
+            if (selected === selectEnvironmentButton) {
+              pvsc.environment.setActiveEnvironment(venvInterpreter);
+            }
+          });
+
+        return;
+      }
+    } else {
+      vscode.window.showErrorMessage(
+        "Cannot create virtual environment; `.venv` already exists."
+      );
+      return;
+    }
   }
+
+  // Create environment by executing Python code.
+  const pythonSrc = path.join(extensionPath, "python-src");
 
   const command = [pythonSrc, "--workspace", workspaceDir];
   progress.report({
@@ -136,6 +182,7 @@ async function createEnvironment(
     return;
   }
 
+  // Process results.
   const jsonMatch = jsonTagRegex.exec(py.stdout);
 
   if (jsonMatch === null || jsonMatch.groups === undefined) {
