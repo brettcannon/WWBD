@@ -31,7 +31,6 @@ N/A
 
 ## TODO
 
-- Handle a non-global interpreter already being selected.
 - Handle empty workspace (create `requirements.txt` file w/ comment explaining what the file is for).
 - Detect `$VIRTUAL_ENV` being set.
 - Create a conda environment from `environment.yml`.
