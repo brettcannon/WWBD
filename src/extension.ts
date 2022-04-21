@@ -55,6 +55,88 @@ async function pvscApi(): Promise<pvsc.IProposedExtensionAPI | undefined> {
   return pvscExtension.exports;
 }
 
+function isGlobal(
+  details: pvsc.EnvironmentDetails | undefined
+): details is pvsc.EnvironmentDetails {
+  if (details === undefined) {
+    return false;
+  }
+
+  const globalInterpTypes = [
+    pvsc.PythonEnvKind.System,
+    pvsc.PythonEnvKind.WindowsStore,
+    pvsc.PythonEnvKind.Pyenv,
+    pvsc.PythonEnvKind.Custom,
+    pvsc.PythonEnvKind.OtherGlobal,
+  ];
+
+  return details.environmentType.some((type) =>
+    globalInterpTypes.includes(type)
+  );
+}
+
+function sortStringIntsDecending(a: string, b: string): -1 | 0 | 1 {
+  const aInt = parseInt(a);
+  const bInt = parseInt(b);
+
+  if (aInt < bInt) {
+    return 1;
+  } else if (aInt > bInt) {
+    return -1;
+  } else {
+    return 0;
+  }
+}
+
+function compareEnvDetailsDescending(
+  a: pvsc.EnvironmentDetails,
+  b: pvsc.EnvironmentDetails
+): -1 | 0 | 1 {
+  for (let i = 0; i < 4; i += 1) {
+    const comparison = sortStringIntsDecending(a.version[i], b.version[i]);
+
+    if (comparison !== 0) {
+      return comparison;
+    }
+  }
+
+  return 0;
+}
+
+async function globalInterpreters(
+  pythonExtension: pvsc.IProposedExtensionAPI
+): Promise<readonly vscode.QuickPickItem[] | undefined> {
+  const interpreterPaths = (
+    await pythonExtension.environment.getEnvironmentPaths()
+  )
+    ?.filter(
+      (pathType) =>
+        pathType !== undefined && pathType.pathType === "interpreterPath"
+    )
+    .map((pathType) => pathType.path);
+
+  if (interpreterPaths === undefined) {
+    return undefined;
+  }
+
+  const interpreterDetails = (
+    await Promise.all(
+      interpreterPaths.map((path) =>
+        pythonExtension.environment.getEnvironmentDetails(path)
+      )
+    )
+  ).filter(isGlobal);
+
+  interpreterDetails.sort(compareEnvDetailsDescending);
+
+  return interpreterDetails.map((details) => {
+    return {
+      label: details.version.slice(0, 3).join("."),
+      description: details.interpreterPath,
+    };
+  });
+}
+
 async function createEnvironment(
   extensionPath: string,
   progress: vscode.Progress<{ /* increment: number, */ message: string }>,
@@ -79,16 +161,18 @@ async function createEnvironment(
 
   // Activate the Python extension.
   progress.report({ message: "Activating the Python extension" });
-  const pvsc = await pvscApi();
+  const pythonExtension = await pvscApi();
 
-  if (pvsc === undefined) {
+  if (pythonExtension === undefined) {
     vscode.window.showErrorMessage("Unable to activate the Python extension.");
     return;
   }
 
   progress.report({ message: "Getting the selected interpreter" });
-  let selectedEnvPath = await pvsc.environment.getActiveEnvironmentPath();
+  let selectedEnvPath =
+    await pythonExtension.environment.getActiveEnvironmentPath();
 
+  // XXX ask if want to select newest Python version, pick, or Cancel
   while (
     selectedEnvPath === undefined ||
     selectedEnvPath.pathType !== "interpreterPath"
@@ -103,17 +187,45 @@ async function createEnvironment(
 
     if (selected === selectInterpreterButton) {
       await vscode.commands.executeCommand("python.setInterpreter");
-      selectedEnvPath = await pvsc.environment.getActiveEnvironmentPath();
+      selectedEnvPath =
+        await pythonExtension.environment.getActiveEnvironmentPath();
       continue;
     } else {
       return;
     }
   }
 
+  let pyPath = selectedEnvPath.path;
+  const interpreterDetails =
+    await pythonExtension.environment.getEnvironmentDetails(
+      selectedEnvPath.path
+    );
+
+  if (!isGlobal(interpreterDetails)) {
+    // XXX ask if want to select newest Python version, pick, or Cancel
+    const interpreterOptions = await globalInterpreters(pythonExtension);
+
+    if (interpreterOptions === undefined) {
+      vscode.window.showErrorMessage(
+        "Unable to gather a list of Python interpreters."
+      );
+      return;
+    } else {
+      let pyPath = await vscode.window.showQuickPick(interpreterOptions, {
+        canPickMany: false,
+        title: "Select an Interpreter",
+      });
+
+      if (pyPath === undefined) {
+        vscode.window.showErrorMessage("No interpeter selected.");
+        return;
+      }
+    }
+  }
+
   outputChannel.appendLine(`interpreter: ${selectedEnvPath.path}`);
 
   // Check that `.venv` does not already exist.
-  const pyPath = selectedEnvPath.path;
   const venvDirectory = path.join(workspaceDir, ".venv");
 
   if (fs.existsSync(venvDirectory)) {
@@ -133,7 +245,7 @@ async function createEnvironment(
         )
         .then((selected) => {
           if (selected === selectEnvironmentButton) {
-            pvsc.environment.setActiveEnvironment(venvInterpreter);
+            pythonExtension.environment.setActiveEnvironment(venvInterpreter);
           }
         });
 
@@ -195,7 +307,7 @@ async function createEnvironment(
 
   const details: JsonPayload = JSON.parse(jsonMatch.groups.json);
 
-  await pvsc.environment.setActiveEnvironment(details.executable);
+  await pythonExtension.environment.setActiveEnvironment(details.executable);
 
   outputChannel.appendLine("Success!");
 }
