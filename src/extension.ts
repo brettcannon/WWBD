@@ -105,7 +105,10 @@ function compareEnvDetailsDescending(
 
 async function globalInterpreters(
   pythonExtension: pvsc.IProposedExtensionAPI
-): Promise<readonly vscode.QuickPickItem[] | undefined> {
+): Promise<
+  | readonly /*vscode.QuickPickItem*/ { label: string; description: string }[]
+  | undefined
+> {
   const interpreterPaths = (
     await pythonExtension.environment.getEnvironmentPaths()
   )
@@ -168,63 +171,6 @@ async function createEnvironment(
     return;
   }
 
-  progress.report({ message: "Getting the selected interpreter" });
-  let selectedEnvPath =
-    await pythonExtension.environment.getActiveEnvironmentPath();
-
-  // XXX ask if want to select newest Python version, pick, or Cancel
-  while (
-    selectedEnvPath === undefined ||
-    selectedEnvPath.pathType !== "interpreterPath"
-  ) {
-    const selectInterpreterButton = "Select Interpreter";
-
-    const selected = await vscode.window.showWarningMessage(
-      "No Python interpreter selected.",
-      selectInterpreterButton,
-      "Cancel"
-    );
-
-    if (selected === selectInterpreterButton) {
-      await vscode.commands.executeCommand("python.setInterpreter");
-      selectedEnvPath =
-        await pythonExtension.environment.getActiveEnvironmentPath();
-      continue;
-    } else {
-      return;
-    }
-  }
-
-  let pyPath = selectedEnvPath.path;
-  const interpreterDetails =
-    await pythonExtension.environment.getEnvironmentDetails(
-      selectedEnvPath.path
-    );
-
-  if (!isGlobal(interpreterDetails)) {
-    // XXX ask if want to select newest Python version, pick, or Cancel
-    const interpreterOptions = await globalInterpreters(pythonExtension);
-
-    if (interpreterOptions === undefined) {
-      vscode.window.showErrorMessage(
-        "Unable to gather a list of Python interpreters."
-      );
-      return;
-    } else {
-      let pyPath = await vscode.window.showQuickPick(interpreterOptions, {
-        canPickMany: false,
-        title: "Select an Interpreter",
-      });
-
-      if (pyPath === undefined) {
-        vscode.window.showErrorMessage("No interpeter selected.");
-        return;
-      }
-    }
-  }
-
-  outputChannel.appendLine(`interpreter: ${selectedEnvPath.path}`);
-
   // Check that `.venv` does not already exist.
   const venvDirectory = path.join(workspaceDir, ".venv");
 
@@ -235,11 +181,11 @@ async function createEnvironment(
         : path.join(venvDirectory, "bin", "python");
 
     if (fs.existsSync(venvInterpreter)) {
-      const selectEnvironmentButton = "Select Interpreter";
+      const selectEnvironmentButton = "Select Environment";
 
       vscode.window
         .showWarningMessage(
-          "A virtual environment already exists at `.venv`.",
+          "A virtual environment already exists at `.venv`. Would you like to select it and halt environment creation?",
           selectEnvironmentButton,
           "Cancel"
         )
@@ -257,6 +203,90 @@ async function createEnvironment(
       return;
     }
   }
+
+  progress.report({ message: "Getting the selected interpreter" });
+  let selectedEnvPath =
+    await pythonExtension.environment.getActiveEnvironmentPath();
+
+  let pyPath: string;
+
+  // XXX ask if want to select newest Python version, pick, or Cancel
+  if (
+    selectedEnvPath === undefined ||
+    selectedEnvPath.pathType !== "interpreterPath"
+  ) {
+    const selectInterpreterButton = "Select Interpreter";
+
+    const selected = await vscode.window.showWarningMessage(
+      "No Python interpreter selected.",
+      selectInterpreterButton,
+      "Cancel"
+    );
+
+    if (selected !== selectInterpreterButton) {
+      vscode.window.showErrorMessage("No interpreter selected.");
+      return;
+    } else {
+      const interpreterOptions = await globalInterpreters(pythonExtension);
+
+      if (interpreterOptions === undefined) {
+        vscode.window.showErrorMessage(
+          "Unable to gather a list of Python interpreters."
+        );
+        return;
+      } else {
+        let pickedInterpreter = await vscode.window.showQuickPick(
+          interpreterOptions,
+          {
+            canPickMany: false,
+            title: "Select an Interpreter",
+          }
+        );
+
+        if (pickedInterpreter === undefined) {
+          vscode.window.showErrorMessage("No interpeter selected.");
+          return;
+        } else {
+          pyPath = pickedInterpreter.description;
+        }
+      }
+    }
+  } else {
+    pyPath = selectedEnvPath.path;
+  }
+
+  const interpreterDetails =
+    await pythonExtension.environment.getEnvironmentDetails(pyPath);
+
+  if (!isGlobal(interpreterDetails)) {
+    // XXX ask if want to select newest Python version, pick, or Cancel
+    const interpreterOptions = await globalInterpreters(pythonExtension);
+
+    if (interpreterOptions === undefined) {
+      vscode.window.showErrorMessage(
+        "Unable to gather a list of Python interpreters."
+      );
+      return;
+    } else {
+      // XXX Let use know they didn't have a global Python interpreter selected.
+      let pickedInterpreter = await vscode.window.showQuickPick(
+        interpreterOptions,
+        {
+          canPickMany: false,
+          title: "Select an Interpreter",
+        }
+      );
+
+      if (pickedInterpreter === undefined) {
+        vscode.window.showErrorMessage("No interpeter selected.");
+        return;
+      } else {
+        pyPath = pickedInterpreter.description;
+      }
+    }
+  }
+
+  outputChannel.appendLine(`interpreter: ${pyPath}`);
 
   // Create environment by executing Python code.
   const pythonSrc = path.join(extensionPath, "python-src");
