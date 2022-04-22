@@ -7,6 +7,8 @@ import * as pvsc from "./pvsc";
 
 const jsonTagRegex = /<JSON>\n(?<json>.+)\n<\/JSON>/;
 
+const outputChannel = vscode.window.createOutputChannel("WWBD");
+
 interface JsonPayload {
   executable: string;
   requirementsFile: string | null;
@@ -140,14 +142,58 @@ async function globalInterpreters(
   });
 }
 
+async function selectGlobalInterpreter(
+  pythonExtension: pvsc.IProposedExtensionAPI,
+  reason: string
+): Promise<string | undefined> {
+  const selectInterpreterButton = "Select Interpreter";
+
+  // XXX ask if want to select newest Python version, pick, or Cancel
+  const selected = await vscode.window.showWarningMessage(
+    reason,
+    selectInterpreterButton,
+    "Cancel"
+  );
+
+  if (selected !== selectInterpreterButton) {
+    noInterpreterSelected();
+    return;
+  } else {
+    const interpreterOptions = await globalInterpreters(pythonExtension);
+
+    if (interpreterOptions === undefined) {
+      vscode.window.showErrorMessage(
+        "Unable to gather a list of Python interpreters."
+      );
+      return;
+    } else {
+      let pickedInterpreter = await vscode.window.showQuickPick(
+        interpreterOptions,
+        {
+          canPickMany: false,
+          title: "Select an Interpreter",
+        }
+      );
+
+      if (pickedInterpreter === undefined) {
+        noInterpreterSelected();
+        return;
+      } else {
+        return pickedInterpreter.description;
+      }
+    }
+  }
+}
+
+function noInterpreterSelected(): void {
+  vscode.window.showErrorMessage("No interpreter selected.");
+}
+
 async function createEnvironment(
   extensionPath: string,
   progress: vscode.Progress<{ /* increment: number, */ message: string }>,
   _token: vscode.CancellationToken
 ): Promise<void> {
-  // XXX move out to prevent duplicate channels from being created
-  const outputChannel = vscode.window.createOutputChannel("WWBD");
-
   // XXX break out sub-steps into separate functions? Return `undefined` as the error condition? What about UX?
 
   // Get the workspace.
@@ -155,7 +201,7 @@ async function createEnvironment(
   const workspaceDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 
   if (workspaceDir === undefined) {
-    // TODO some way to offer to let the user select a workspace?
+    // TODO some way to let the user select a workspace?
     vscode.window.showErrorMessage("No workspace selected.");
     return;
   } else {
@@ -208,81 +254,40 @@ async function createEnvironment(
   let selectedEnvPath =
     await pythonExtension.environment.getActiveEnvironmentPath();
 
-  let pyPath: string;
+  let pyPath: string | undefined;
 
-  // XXX ask if want to select newest Python version, pick, or Cancel
-  if (
-    selectedEnvPath === undefined ||
-    selectedEnvPath.pathType !== "interpreterPath"
-  ) {
-    const selectInterpreterButton = "Select Interpreter";
-
-    const selected = await vscode.window.showWarningMessage(
-      "No Python interpreter selected.",
-      selectInterpreterButton,
-      "Cancel"
+  if (selectedEnvPath === undefined) {
+    pyPath = await selectGlobalInterpreter(
+      pythonExtension,
+      "No Python interpreter selected."
     );
-
-    if (selected !== selectInterpreterButton) {
-      vscode.window.showErrorMessage("No interpreter selected.");
-      return;
-    } else {
-      const interpreterOptions = await globalInterpreters(pythonExtension);
-
-      if (interpreterOptions === undefined) {
-        vscode.window.showErrorMessage(
-          "Unable to gather a list of Python interpreters."
-        );
-        return;
-      } else {
-        let pickedInterpreter = await vscode.window.showQuickPick(
-          interpreterOptions,
-          {
-            canPickMany: false,
-            title: "Select an Interpreter",
-          }
-        );
-
-        if (pickedInterpreter === undefined) {
-          vscode.window.showErrorMessage("No interpeter selected.");
-          return;
-        } else {
-          pyPath = pickedInterpreter.description;
-        }
-      }
-    }
+  } else if (selectedEnvPath.pathType !== "interpreterPath") {
+    pyPath = await selectGlobalInterpreter(
+      pythonExtension,
+      "Python environment with no interpreter selected."
+    );
   } else {
     pyPath = selectedEnvPath.path;
+  }
+
+  // One of the branches of the above `if` didn't lead to an interpreter being selected.
+  if (pyPath === undefined) {
+    return;
   }
 
   const interpreterDetails =
     await pythonExtension.environment.getEnvironmentDetails(pyPath);
 
   if (!isGlobal(interpreterDetails)) {
-    // XXX ask if want to select newest Python version, pick, or Cancel
-    const interpreterOptions = await globalInterpreters(pythonExtension);
+    const selectedPyPath = await selectGlobalInterpreter(
+      pythonExtension,
+      "The selected Python environment is not a globally-installed Python interpreter."
+    );
 
-    if (interpreterOptions === undefined) {
-      vscode.window.showErrorMessage(
-        "Unable to gather a list of Python interpreters."
-      );
+    if (selectedPyPath === undefined) {
       return;
     } else {
-      // XXX Let use know they didn't have a global Python interpreter selected.
-      let pickedInterpreter = await vscode.window.showQuickPick(
-        interpreterOptions,
-        {
-          canPickMany: false,
-          title: "Select an Interpreter",
-        }
-      );
-
-      if (pickedInterpreter === undefined) {
-        vscode.window.showErrorMessage("No interpeter selected.");
-        return;
-      } else {
-        pyPath = pickedInterpreter.description;
-      }
+      pyPath = selectedPyPath;
     }
   }
 
@@ -293,7 +298,7 @@ async function createEnvironment(
 
   const command = [pythonSrc, "--workspace", workspaceDir];
   progress.report({
-    message: `> ${pyPath} ${command.join(" ")}`,
+    message: "Creating the environment",
   });
 
   // Create a custom environment variable collection to force Python to use UTF-8.
