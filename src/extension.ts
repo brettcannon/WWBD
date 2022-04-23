@@ -146,26 +146,33 @@ async function selectGlobalInterpreter(
   pythonExtension: pvsc.IProposedExtensionAPI,
   reason: string
 ): Promise<string | undefined> {
+  const useNewest = "Use newest version";
   const selectInterpreterButton = "Select Interpreter";
+  const cancel = "Cancel";
 
   // XXX ask if want to select newest Python version, pick, or Cancel
   const selected = await vscode.window.showWarningMessage(
     reason,
+    useNewest,
     selectInterpreterButton,
-    "Cancel"
+    cancel
   );
 
-  if (selected !== selectInterpreterButton) {
+  if (selected === cancel) {
     noInterpreterSelected();
     return;
   } else {
     const interpreterOptions = await globalInterpreters(pythonExtension);
 
-    if (interpreterOptions === undefined) {
+    if (interpreterOptions === undefined || interpreterOptions.length === 0) {
       vscode.window.showErrorMessage(
         "Unable to gather a list of Python interpreters."
       );
       return;
+    }
+
+    if (selected === useNewest) {
+      return interpreterOptions[0].description;
     } else {
       let pickedInterpreter = await vscode.window.showQuickPick(
         interpreterOptions,
