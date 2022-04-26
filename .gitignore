@@ -107,3 +107,4 @@ out/
 .venv/
 __pycache__/
 wwbd-*.vsix
+.vscode-test/
