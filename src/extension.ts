@@ -351,5 +351,9 @@ async function createEnvironment(
 
   await pythonExtension.environment.setActiveEnvironment(details.executable);
 
-  outputChannel.appendLine("Success!");
+  outputChannel.appendLine(
+    `Success: ${
+      (await pythonExtension.environment.getActiveEnvironmentPath())?.path
+    }`
+  );
 }
