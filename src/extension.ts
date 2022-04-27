@@ -36,7 +36,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {}
 
-async function pvscApi(): Promise<pvsc.IProposedExtensionAPI | undefined> {
+export async function pvscApi(): Promise<
+  pvsc.IProposedExtensionAPI | undefined
+> {
   const pvscExtension =
     vscode.extensions.getExtension<pvsc.IProposedExtensionAPI>(
       "ms-python.python"
@@ -57,7 +59,7 @@ async function pvscApi(): Promise<pvsc.IProposedExtensionAPI | undefined> {
   return pvscExtension.exports;
 }
 
-function isGlobal(
+export function isGlobal(
   details: pvsc.EnvironmentDetails | undefined
 ): details is pvsc.EnvironmentDetails {
   if (details === undefined) {
@@ -90,7 +92,7 @@ function sortStringIntsDecending(a: string, b: string): -1 | 0 | 1 {
   }
 }
 
-function compareEnvDetailsDescending(
+export function compareEnvDetailsDescending(
   a: pvsc.EnvironmentDetails,
   b: pvsc.EnvironmentDetails
 ): -1 | 0 | 1 {
@@ -105,24 +107,24 @@ function compareEnvDetailsDescending(
   return 0;
 }
 
+export function filterByPathType(pathTypes: pvsc.EnvPathType[]): string[] {
+  return pathTypes
+    .filter((pathType) => pathType.pathType === "interpreterPath")
+    .map((pathType) => pathType.path);
+}
+
 async function globalInterpreters(
   pythonExtension: pvsc.IProposedExtensionAPI
 ): Promise<
   | readonly /*vscode.QuickPickItem*/ { label: string; description: string }[]
   | undefined
 > {
-  const interpreterPaths = (
-    await pythonExtension.environment.getEnvironmentPaths()
-  )
-    ?.filter(
-      (pathType) =>
-        pathType !== undefined && pathType.pathType === "interpreterPath"
-    )
-    .map((pathType) => pathType.path);
-
-  if (interpreterPaths === undefined) {
+  const pathTypes = await pythonExtension.environment.getEnvironmentPaths();
+  if (pathTypes === undefined) {
     return undefined;
   }
+
+  const interpreterPaths = filterByPathType(pathTypes);
 
   const interpreterDetails = (
     await Promise.all(
@@ -150,7 +152,6 @@ async function selectGlobalInterpreter(
   const selectInterpreterButton = "Select Interpreter";
   const cancel = "Cancel";
 
-  // XXX ask if want to select newest Python version, pick, or Cancel
   const selected = await vscode.window.showWarningMessage(
     reason,
     useNewest,
@@ -196,6 +197,12 @@ function noInterpreterSelected(): void {
   vscode.window.showErrorMessage("No interpreter selected.");
 }
 
+export function venvExecutable(dir: string): string {
+  return os.platform() === "win32"
+    ? path.join(dir, "Scripts", "python.exe")
+    : path.join(dir, "bin", "python");
+}
+
 async function createEnvironment(
   extensionPath: string,
   progress: vscode.Progress<{ /* increment: number, */ message: string }>,
@@ -228,10 +235,7 @@ async function createEnvironment(
   const venvDirectory = path.join(workspaceDir, ".venv");
 
   if (fs.existsSync(venvDirectory)) {
-    const venvInterpreter =
-      os.platform() === "win32"
-        ? path.join(venvDirectory, "Scripts", "python.exe")
-        : path.join(venvDirectory, "bin", "python");
+    const venvInterpreter = venvExecutable(venvDirectory);
 
     if (fs.existsSync(venvInterpreter)) {
       const selectEnvironmentButton = "Select Environment";
@@ -277,7 +281,7 @@ async function createEnvironment(
     pyPath = selectedEnvPath.path;
   }
 
-  // One of the branches of the above `if` didn't lead to an interpreter being selected.
+  // One of the branches of the above `if` block didn't lead to an interpreter being selected.
   if (pyPath === undefined) {
     return;
   }
@@ -300,6 +304,7 @@ async function createEnvironment(
 
   outputChannel.appendLine(`interpreter: ${pyPath}`);
 
+  // FIXME execution of Python code
   // Create environment by executing Python code.
   const pythonSrc = path.join(extensionPath, "python-src");
 
@@ -336,6 +341,7 @@ async function createEnvironment(
     return;
   }
 
+  // FIXME parse out JSON data
   // Process results.
   const jsonMatch = jsonTagRegex.exec(py.stdout);
 
