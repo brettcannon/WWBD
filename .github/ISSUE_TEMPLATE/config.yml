@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Bug"
+    url: "https://code.visualstudio.com/Docs/supporting/FAQ?msclkid=59f8dac4c68211ecbe8aa3ea1e84a055#_report-an-issue-with-a-vs-code-extension"
+    about: "Please use the `Help: Report Issue...` command (Help > Report Issue)"
+  - name: "Feature Request"
+    url: "https://github.com/brettcannon/WWBD/discussions/categories/ideas"
+    about: "Please open/vote for a discussion in the 'Ideas' category"
