@@ -18,7 +18,6 @@ export function activate(context: vscode.ExtensionContext): void {
   let disposable = vscode.commands.registerCommand(
     "wwbd.createEnvironment",
     () =>
-      // XXX only use progress when executing Python code
       vscode.window.withProgress(
         {
           location: vscode.ProgressLocation.Notification,
@@ -218,8 +217,6 @@ async function createEnvironment(
   progress: vscode.Progress<{ /* increment: number, */ message: string }>,
   _token: vscode.CancellationToken
 ): Promise<void> {
-  // XXX break out sub-steps into separate functions? Return `undefined` as the error condition? What about UX?
-
   // Get the workspace.
   // TODO be smarter in the face of multi-root workspaces.
   // TODO make into a function?
