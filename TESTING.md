@@ -44,6 +44,7 @@ following packages (listed by their `apt` install names):
       warning message.
 - [ ] If a non-global interpreter is selected, show a warning message.
 - [ ] Environment selected after environment creation is completed.
+- [ ] If environment creation fails, an error message and output panel is shown.
 
 
 ### Interpreter selection

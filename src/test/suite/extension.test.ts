@@ -11,19 +11,10 @@ function arrayEquals<T>(a: T[], b: T[]): void {
   a.every((val, index) => assert.strictEqual(b[index], val));
 }
 
-suite("Extension Test Suite", () => {
+suite("Unit Tests", () => {
   vscode.window.showInformationMessage("Start all tests.");
 
-  test("Sample test", () => {
-    assert.strictEqual(-1, [1, 2, 3].indexOf(5));
-    assert.strictEqual(-1, [1, 2, 3].indexOf(0));
-  });
-
-  test("Load PVSC", () => {
-    assert.doesNotReject(wwbd.pvscApi);
-  });
-
-  test("Classify interpreter as global", () => {
+  test("Classify an interpreter as global", () => {
     const knownKinds = [
       pvsc.PythonEnvKind.Unknown,
       pvsc.PythonEnvKind.System,
@@ -74,7 +65,7 @@ suite("Extension Test Suite", () => {
     assert.ok(!wwbd.isGlobal(undefined));
   });
 
-  test("Sort by version", () => {
+  test("Sort by Python version", () => {
     const tests = [
       ["3.0.0", "2.7.12"],
       ["3.10.0", "3.6.10"],
@@ -118,7 +109,7 @@ suite("Extension Test Suite", () => {
     });
   });
 
-  test("filter by path type", () => {
+  test("Filter interpreters by path type", () => {
     const given: pvsc.EnvPathType[] = [
       { path: "python 1", pathType: "interpreterPath" },
       { path: "python 2", pathType: "envFolderPath" },
@@ -139,5 +130,32 @@ suite("Extension Test Suite", () => {
         : path.join(dir, "bin", "python");
 
     assert.strictEqual(wwbd.venvExecutable(dir), expect);
+  });
+
+  test("Parse output from a Python subprocess", () => {
+    const badOutput =
+      "People put the strangest stuff in their `sitecustomize.py` ...";
+
+    assert.strictEqual(wwbd.parseOutput(badOutput), undefined);
+
+    const payload: wwbd.PythonPayload = {
+      executable: "python",
+      requirementsFile: "requirements.txt",
+    };
+
+    const goodOutput = `${badOutput}\n<JSON>\n${JSON.stringify(
+      payload
+    )}\n</JSON>\nOther unexpected stuff at shutdown ...`;
+
+    const actual = wwbd.parseOutput(goodOutput);
+
+    assert.strictEqual(actual?.executable, payload.executable);
+    assert.strictEqual(actual?.requirementsFile, payload.requirementsFile);
+  });
+});
+
+suite("Integration Tests", () => {
+  test("Load PVSC", () => {
+    assert.doesNotReject(wwbd.pvscApi);
   });
 });

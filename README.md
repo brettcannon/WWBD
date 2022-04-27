@@ -30,7 +30,6 @@ N/A
 
 ## TODO
 
-- Write tests for TS code.
 - Handle empty workspace (create `requirements.txt` file w/ comment explaining what the file is for).
 - Detect `$VIRTUAL_ENV` being set.
 - Create a conda environment from `environment.yml`.

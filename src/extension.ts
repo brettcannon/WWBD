@@ -9,7 +9,7 @@ const jsonTagRegex = /<JSON>\n(?<json>.+)\n<\/JSON>/;
 
 const outputChannel = vscode.window.createOutputChannel("WWBD");
 
-interface JsonPayload {
+export interface PythonPayload {
   executable: string;
   requirementsFile: string | null;
 }
@@ -203,6 +203,16 @@ export function venvExecutable(dir: string): string {
     : path.join(dir, "bin", "python");
 }
 
+export function parseOutput(output: string): PythonPayload | undefined {
+  const jsonMatch = jsonTagRegex.exec(output);
+
+  if (jsonMatch === null || jsonMatch.groups === undefined) {
+    return undefined;
+  } else {
+    return JSON.parse(jsonMatch.groups.json);
+  }
+}
+
 async function createEnvironment(
   extensionPath: string,
   progress: vscode.Progress<{ /* increment: number, */ message: string }>,
@@ -212,6 +222,8 @@ async function createEnvironment(
 
   // Get the workspace.
   // TODO be smarter in the face of multi-root workspaces.
+  // TODO make into a function?
+  progress.report({ message: "Finding the workspace" });
   const workspaceDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 
   if (workspaceDir === undefined) {
@@ -232,6 +244,8 @@ async function createEnvironment(
   }
 
   // Check that `.venv` does not already exist.
+  // TODO make into a function?
+  progress.report({ message: "Checking for `.venv`" });
   const venvDirectory = path.join(workspaceDir, ".venv");
 
   if (fs.existsSync(venvDirectory)) {
@@ -261,6 +275,7 @@ async function createEnvironment(
     }
   }
 
+  // TODO make into a function?
   progress.report({ message: "Getting the selected interpreter" });
   let selectedEnvPath =
     await pythonExtension.environment.getActiveEnvironmentPath();
@@ -304,14 +319,12 @@ async function createEnvironment(
 
   outputChannel.appendLine(`interpreter: ${pyPath}`);
 
-  // FIXME execution of Python code
   // Create environment by executing Python code.
+  // TODO make into a function?
+  progress.report({ message: "Creating the environment" });
   const pythonSrc = path.join(extensionPath, "python-src");
 
   const command = [pythonSrc, "--workspace", workspaceDir];
-  progress.report({
-    message: "Creating the environment",
-  });
 
   // Create a custom environment variable collection to force Python to use UTF-8.
   const pyEnv: NodeJS.ProcessEnv = {};
@@ -341,19 +354,18 @@ async function createEnvironment(
     return;
   }
 
-  // FIXME parse out JSON data
   // Process results.
-  const jsonMatch = jsonTagRegex.exec(py.stdout);
+  // TODO make into a function?
+  const details = parseOutput(py.stdout);
 
-  if (jsonMatch === null || jsonMatch.groups === undefined) {
+  if (details === undefined) {
+    // TODO Show button to display output instead of showing it automatically?
     vscode.window.showErrorMessage(
       "Error during environment creation (JSON output missing)."
     );
     outputChannel.show();
     return;
   }
-
-  const details: JsonPayload = JSON.parse(jsonMatch.groups.json);
 
   await pythonExtension.environment.setActiveEnvironment(details.executable);
 
