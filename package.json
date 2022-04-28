@@ -1,9 +1,9 @@
 {
   "name": "wwbd",
-  "version": "0.0.1",
+  "version": "2022.0.0",
   "publisher": "brettcannon",
   "displayName": "WWBD",
-  "description": "What Would Brett Do?",
+  "description": "What Would Brett Do for Python environments?",
   "homepage": "https://github.com/brettcannon/WWBD",
   "author": {
     "name": "Brett Cannon"
@@ -71,6 +71,7 @@
     "glob": "^7.2.0",
     "mocha": "^9.2.2",
     "typescript": "^4.5.5",
+    "vsce": "^2.7.0",
     "@vscode/test-electron": "^2.1.3"
   }
 }

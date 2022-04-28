@@ -1,8 +1,10 @@
 # What Would Brett Do?
 
-This **EXPERIMENTAL** extension is meant to help people set up a Python _environment_.
+This **EXPERIMENTAL** extension is meant to help people set up a [Python _environment_](https://code.visualstudio.com/docs/python/environments).
 
-The project structure and user experience of this extension is **very opinionated**. While the supported project structures and workflows are considered common _enough_, do not be surprised if your particular workflow is not supported, especially if they would be considered advanced to a beginner.
+The project structure and user experience of this extension is **very opinionated**. While the supported project structures and workflows are considered common _enough_, do not be surprised if your particular workflow is not supported, especially if they would be considered advanced to someone new to Python.
+
+This extension is meant act as a playground for the [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python) around environments and solicit feedback on this extension's functionality. If you have any feedback, please start a [discussion](https://github.com/brettcannon/WWBD/discussions). Popular functionality _may_ make it's way into the Python extension itself.
 
 ## Features
 
