@@ -6,7 +6,7 @@ The project structure and user experience of this extension is **very opinionate
 
 ## Features
 
-### `Create Extension` command
+### `Create Environment` command
 
 1. Use an appropriate interpreter (the selected interpreter, ask the user to use the newest version of Python installed, or ask the user to pick an interpreter).
 1. Create a virtual environment in the workspace: `python -m venv .venv --prompt .`.
