@@ -5,7 +5,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import * as pvsc from "./pvsc";
 
-const jsonTagRegex = /<JSON>\n(?<json>.+)\n<\/JSON>/;
+const jsonTagRegex = /<JSON>\r?\n(?<json>.+)\r?\n<\/JSON>/;
 
 const outputChannel = vscode.window.createOutputChannel("WWBD");
 
