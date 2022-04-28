@@ -143,14 +143,31 @@ suite("Unit Tests", () => {
       requirementsFile: "requirements.txt",
     };
 
-    const goodOutput = `${badOutput}\n<JSON>\n${JSON.stringify(
-      payload
-    )}\n</JSON>\nOther unexpected stuff at shutdown ...`;
+    const goodOutput = `${badOutput}
+<JSON>
+${JSON.stringify(payload)}
+</JSON>
+Other unexpected stuff at shutdown ...`;
 
     const actual = wwbd.parseOutput(goodOutput);
 
     assert.strictEqual(actual?.executable, payload.executable);
     assert.strictEqual(actual?.requirementsFile, payload.requirementsFile);
+  });
+
+  test("Parse output with a Windows file path", () => {
+    const output = `<JSON>
+{"executable": "c:/Users/brcan/Testing/Some Python scratch space/.venv/Scripts/python.exe", "requirementsFile": null}
+</JSON>`;
+
+    const actual = wwbd.parseOutput(output);
+
+    assert.strictEqual(
+      actual?.executable,
+      "c:/Users/brcan/Testing/Some Python scratch space/.venv/Scripts/python.exe"
+    );
+
+    assert.strictEqual(actual.requirementsFile, null);
   });
 });
 
