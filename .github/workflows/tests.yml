@@ -20,7 +20,7 @@ jobs:
         run: python -m pytest python-src/tests
 
   typescript-tests:
-    name: TypeScript Tests
+    name: "TypeScript Tests"
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repository"
@@ -36,3 +36,19 @@ jobs:
         uses: GabrielBB/xvfb-action@v1
         with:
           run: yarn test
+
+  packaging:
+    name: "Packaging"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v3
+      - name: "Install Node"
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
+          cache: "yarn"
+      - name: "Install dependencies"
+        run: yarn
+      - name: "Build package"
+        run: yarn run vsce package --yarn
