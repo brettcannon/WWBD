@@ -17,8 +17,10 @@ This extension is meant act as a playground for the [Python extension](https://m
 
 ## Requirements
 
-1. Python (must be an [actively maintained version](https://devguide.python.org/#status-of-python-branches))
-2. [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python) (which will be installed automatically)
+1. Python (must be an [actively maintained version](https://devguide.python.org/#status-of-python-branches); typically any version less than 5 years old)
+2. [`venv`](https://docs.python.org/3/library/venv.html) (typically only missing on Debian-based Linux distros; install via `python3-venv`)
+3. [`pip`](https://pip.pypa.io/) (typically only missing on Debian-based Linux distros; install via `python3-pip`)
+4. [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python) (which will be installed automatically)
 
 ## Extension Settings
 
