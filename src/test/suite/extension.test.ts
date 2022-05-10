@@ -11,10 +11,10 @@ function arrayEquals<T>(a: T[], b: T[]): void {
   a.every((val, index) => assert.strictEqual(b[index], val));
 }
 
-suite("Unit Tests", () => {
+suite("Unit Tests", function () {
   vscode.window.showInformationMessage("Start all tests.");
 
-  test("Classify an interpreter as global", () => {
+  suite("isGlobal()", function () {
     const knownKinds = [
       pvsc.PythonEnvKind.Unknown,
       pvsc.PythonEnvKind.System,
@@ -47,25 +47,29 @@ suite("Unit Tests", () => {
     ];
 
     knownKinds.forEach((kind) => {
-      const details: pvsc.EnvironmentDetails = {
-        interpreterPath: "python",
-        envFolderPath: undefined,
-        version: [],
-        environmentType: [kind],
-        metadata: {},
-      };
+      test(`${kind}`, function () {
+        const details: pvsc.EnvironmentDetails = {
+          interpreterPath: "python",
+          envFolderPath: undefined,
+          version: [],
+          environmentType: [kind],
+          metadata: {},
+        };
 
-      if (globalKinds.includes(kind)) {
-        assert.ok(wwbd.isGlobal(details));
-      } else {
-        assert.ok(!wwbd.isGlobal(details));
-      }
+        if (globalKinds.includes(kind)) {
+          assert.ok(wwbd.isGlobal(details));
+        } else {
+          assert.ok(!wwbd.isGlobal(details));
+        }
+      });
     });
 
-    assert.ok(!wwbd.isGlobal(undefined));
+    test("considers `undefined` as not global", function () {
+      assert.ok(!wwbd.isGlobal(undefined));
+    });
   });
 
-  test("Sort by Python version", () => {
+  suite("compareEnvDetailsDescending()", function () {
     const tests = [
       ["3.0.0", "2.7.12"],
       ["3.10.0", "3.6.10"],
@@ -73,43 +77,47 @@ suite("Unit Tests", () => {
     ];
 
     tests.forEach((pairs) => {
-      let greater = pairs[0].split(".");
-      let lesser = pairs[1].split(".");
+      test(`${pairs[0]} > ${pairs[1]}`, function () {
+        let greater = pairs[0].split(".");
+        let lesser = pairs[1].split(".");
 
-      const greaterDetail: pvsc.EnvironmentDetails = {
-        interpreterPath: "python",
-        envFolderPath: undefined,
-        version: greater,
-        environmentType: [],
-        metadata: {},
-      };
+        const greaterDetail: pvsc.EnvironmentDetails = {
+          interpreterPath: "python",
+          envFolderPath: undefined,
+          version: greater,
+          environmentType: [],
+          metadata: {},
+        };
 
-      const lesserDetail: pvsc.EnvironmentDetails = {
-        interpreterPath: "python",
-        envFolderPath: undefined,
-        version: lesser,
-        environmentType: [],
-        metadata: {},
-      };
+        const lesserDetail: pvsc.EnvironmentDetails = {
+          interpreterPath: "python",
+          envFolderPath: undefined,
+          version: lesser,
+          environmentType: [],
+          metadata: {},
+        };
 
-      assert.strictEqual(
-        wwbd.compareEnvDetailsDescending(greaterDetail, lesserDetail),
-        -1
-      );
+        test(`compares ${pairs[0]} > ${pairs[1]}`, function () {
+          assert.strictEqual(
+            wwbd.compareEnvDetailsDescending(greaterDetail, lesserDetail),
+            -1
+          );
 
-      assert.strictEqual(
-        wwbd.compareEnvDetailsDescending(lesserDetail, greaterDetail),
-        1
-      );
+          assert.strictEqual(
+            wwbd.compareEnvDetailsDescending(lesserDetail, greaterDetail),
+            1
+          );
 
-      assert.strictEqual(
-        wwbd.compareEnvDetailsDescending(greaterDetail, greaterDetail),
-        0
-      );
+          assert.strictEqual(
+            wwbd.compareEnvDetailsDescending(greaterDetail, greaterDetail),
+            0
+          );
+        });
+      });
     });
   });
 
-  test("Filter interpreters by path type", () => {
+  test("filterByPathType()", function () {
     const given: pvsc.EnvPathType[] = [
       { path: "python 1", pathType: "interpreterPath" },
       { path: "python 2", pathType: "envFolderPath" },
@@ -121,7 +129,7 @@ suite("Unit Tests", () => {
     arrayEquals(wwbd.filterByPathType(given), expected);
   });
 
-  test("Environment directory to executable", () => {
+  test("venvExecutable()", function () {
     const dir = ".venv";
 
     const expect =
@@ -132,7 +140,7 @@ suite("Unit Tests", () => {
     assert.strictEqual(wwbd.venvExecutable(dir), expect);
   });
 
-  test("Parse output from a Python subprocess", () => {
+  suite("parseOutput()", function () {
     const badOutput =
       "People put the strangest stuff in their `sitecustomize.py` ...";
 
@@ -151,28 +159,33 @@ Other unexpected stuff at shutdown ...`;
 
     const actual = wwbd.parseOutput(goodOutput);
 
-    assert.strictEqual(actual?.executable, payload.executable);
-    assert.strictEqual(actual?.requirementsFile, payload.requirementsFile);
-  });
+    test("parses the executable", function () {
+      assert.strictEqual(actual?.executable, payload.executable);
+    });
 
-  test("Parse output with a Windows file path", () => {
-    const output = `<JSON>
+    test("parses the requirements file", function () {
+      assert.strictEqual(actual?.requirementsFile, payload.requirementsFile);
+    });
+
+    test("Parse output with a Windows file path", function () {
+      const output = `<JSON>
 {"executable": "c:/Users/brcan/Testing/Some Python scratch space/.venv/Scripts/python.exe", "requirementsFile": null}
 </JSON>`;
 
-    const actual = wwbd.parseOutput(output);
+      const actual = wwbd.parseOutput(output);
 
-    assert.strictEqual(
-      actual?.executable,
-      "c:/Users/brcan/Testing/Some Python scratch space/.venv/Scripts/python.exe"
-    );
+      assert.strictEqual(
+        actual?.executable,
+        "c:/Users/brcan/Testing/Some Python scratch space/.venv/Scripts/python.exe"
+      );
 
-    assert.strictEqual(actual.requirementsFile, null);
+      assert.strictEqual(actual.requirementsFile, null);
+    });
   });
 });
 
-suite("Integration Tests", () => {
-  test("Load PVSC", () => {
+suite("Integration Tests", function () {
+  test("Load PVSC", function () {
     assert.doesNotReject(wwbd.pvscApi);
   });
 });
