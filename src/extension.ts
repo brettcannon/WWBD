@@ -251,13 +251,12 @@ export function execPython(
 
 async function createEnvironment(
   extensionPath: string,
-  progress: vscode.Progress<{ /* increment: number, */ message: string }>,
+  _progress: vscode.Progress<{ increment: number; message: string }>,
   _token: vscode.CancellationToken
 ): Promise<void> {
   // Get the workspace.
   // TODO be smarter in the face of multi-root workspaces.
   // TODO make into a function?
-  progress.report({ message: "Finding the workspace" });
   const workspaceDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 
   if (workspaceDir === undefined) {
@@ -269,7 +268,6 @@ async function createEnvironment(
   }
 
   // Activate the Python extension.
-  progress.report({ message: "Activating the Python extension" });
   const pythonExtension = await pvscApi();
 
   if (pythonExtension === undefined) {
@@ -279,7 +277,6 @@ async function createEnvironment(
 
   // Check that `.venv` does not already exist.
   // TODO make into a function?
-  progress.report({ message: "Checking for `.venv`" });
   const venvDirectory = path.join(workspaceDir, ".venv");
 
   if (fs.existsSync(venvDirectory)) {
@@ -310,7 +307,6 @@ async function createEnvironment(
   }
 
   // TODO make into a function?
-  progress.report({ message: "Getting the selected interpreter" });
   let selectedEnvPath =
     await pythonExtension.environment.getActiveEnvironmentPath();
 
@@ -355,7 +351,6 @@ async function createEnvironment(
 
   // Create environment by executing Python code.
   // TODO make into a function?
-  progress.report({ message: "Creating the environment" });
   const pythonSrc = path.join(extensionPath, "python-src");
   const command = [pythonSrc, "--workspace", workspaceDir];
   const details = execPython(pyPath, command);
