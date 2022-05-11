@@ -1,37 +1,58 @@
 name: Tests
 on: [pull_request]
 
+env:
+  NODE_VERSION: "14"
+
 jobs:
   python-tests:
     name: Python Tests
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@v3
+
       - name: "Install Python"
         uses: actions/setup-python@v3
         with:
-          python-version: "3.7" # The oldest version supported.
-          cache: "pip"
-          cache-dependency-path: "**/requirements-dev.txt"
-      - name: "Install dependencies"
-        run: python -m pip install -r requirements-dev.txt
+          python-version: ${{ matrix.python-vesion }}
+
       - name: "Run tests"
-        run: python -m pytest python-src/tests
+        run: pipx run pytest python-src/tests
 
   typescript-tests:
     name: "TypeScript Tests"
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@v3
+
       - name: "Install Node"
         uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: ${{ env.NODE_VERSION }}
           cache: "yarn"
+
+      - name: "Install Python"
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-vesion }}
+
       - name: "Install dependencies"
         run: yarn
+
       - name: "Run tests"
         uses: GabrielBB/xvfb-action@v1
         with:
@@ -43,12 +64,15 @@ jobs:
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@v3
+
       - name: "Install Node"
         uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: ${{ env.NODE_VERSION }}
           cache: "yarn"
+
       - name: "Install dependencies"
         run: yarn
+
       - name: "Build package"
         run: yarn run vsce package --yarn
