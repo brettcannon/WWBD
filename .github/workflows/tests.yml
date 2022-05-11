@@ -3,7 +3,6 @@ on: [pull_request]
 
 env:
   NODE_VERSION: "14"
-  PYTHON_VERSIONS: '["3.7", "3.8", "3.9", "3.10"]'
 
 jobs:
   python-tests:
@@ -13,7 +12,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ${{ fromJSON(env.PYTHON_VERSIONS) }}
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
       - name: "Checkout Repository"
@@ -39,7 +38,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ${{ fromJSON(env.PYTHON_VERSIONS) }}
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
 
     steps:
       - name: "Checkout Repository"
