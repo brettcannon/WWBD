@@ -190,7 +190,6 @@ suite("Integration Tests", function () {
   });
 
   suite("execPython()", function () {
-    const pythonPath = "python3";
     const executable = "some_executable";
     const requirementsFile = "some_requirementsFile";
     const command = [
@@ -198,7 +197,7 @@ suite("Integration Tests", function () {
       `import json; print("<JSON>"); print(json.dumps({"executable": "${executable}", "requirementsFile": "${requirementsFile}"})); print("</JSON>")`,
     ];
 
-    const actual = wwbd.execPython(pythonPath, command);
+    const actual = wwbd.execPython("python3", command);
 
     test("executable", function () {
       assert.strictEqual(actual?.executable, executable);
