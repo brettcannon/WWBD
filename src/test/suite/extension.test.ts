@@ -188,4 +188,24 @@ suite("Integration Tests", function () {
   test("Load PVSC", function () {
     assert.doesNotReject(wwbd.pvscApi);
   });
+
+  suite("execPython()", function () {
+    const pythonPath = "python3";
+    const executable = "some_executable";
+    const requirementsFile = "some_requirementsFile";
+    const command = [
+      "-c",
+      `import json; print("<JSON>"); print(json.dumps({"executable": "${executable}", "requirementsFile": "${requirementsFile}"})); print("</JSON>")`,
+    ];
+
+    const actual = wwbd.execPython(pythonPath, command);
+
+    test("executable", function () {
+      assert.strictEqual(actual?.executable, executable);
+    });
+
+    test("requirementsFile", function () {
+      assert.strictEqual(actual?.requirementsFile, requirementsFile);
+    });
+  });
 });

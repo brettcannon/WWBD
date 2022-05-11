@@ -1,3 +1,4 @@
+import { ConsoleReporter } from "@vscode/test-electron";
 import * as child_process from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -212,6 +213,42 @@ export function parseOutput(output: string): PythonPayload | undefined {
   }
 }
 
+export function execPython(
+  pyPath: string,
+  command: string[]
+): PythonPayload | undefined {
+  // Create a custom environment variable collection to force Python to use UTF-8.
+  const pyEnv: NodeJS.ProcessEnv = {};
+  Object.assign(pyEnv, process.env);
+  pyEnv.PYTHONUTF8 = "1";
+  // TODO make asynchronous?: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processspawncommand-args-options
+  const py = child_process.spawnSync(pyPath, command, {
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"],
+    env: pyEnv,
+  });
+
+  // TODO Build up stdout and stderr into a buffer dynamically to get proper interleaving.
+  outputChannel.append(py.stdout);
+  outputChannel.append(py.stderr);
+
+  if (py.error !== undefined) {
+    vscode.window.showErrorMessage(
+      `Error during environment creation: ${py.error.message} (${py.error.name}).`
+    );
+    return;
+  } else if (py.status !== 0) {
+    vscode.window.showErrorMessage(
+      `Error during environment creation (status code: ${py.status}).`
+    );
+    outputChannel.show();
+    return;
+  }
+
+  // Process results.
+  return parseOutput(py.stdout);
+}
+
 async function createEnvironment(
   extensionPath: string,
   progress: vscode.Progress<{ /* increment: number, */ message: string }>,
@@ -320,40 +357,8 @@ async function createEnvironment(
   // TODO make into a function?
   progress.report({ message: "Creating the environment" });
   const pythonSrc = path.join(extensionPath, "python-src");
-
   const command = [pythonSrc, "--workspace", workspaceDir];
-
-  // Create a custom environment variable collection to force Python to use UTF-8.
-  const pyEnv: NodeJS.ProcessEnv = {};
-  Object.assign(pyEnv, process.env);
-  pyEnv.PYTHONUTF8 = "1";
-  // TODO make asynchronous?: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processspawncommand-args-options
-  const py = child_process.spawnSync(pyPath, command, {
-    encoding: "utf-8",
-    stdio: ["ignore", "pipe", "pipe"],
-    env: pyEnv,
-  });
-
-  // TODO Build up stdout and stderr into a buffer dynamically to get proper interleaving.
-  outputChannel.append(py.stdout);
-  outputChannel.append(py.stderr);
-
-  if (py.error !== undefined) {
-    vscode.window.showErrorMessage(
-      `Error during environment creation: ${py.error.message} (${py.error.name}).`
-    );
-    return;
-  } else if (py.status !== 0) {
-    vscode.window.showErrorMessage(
-      `Error during environment creation (status code: ${py.status}).`
-    );
-    outputChannel.show();
-    return;
-  }
-
-  // Process results.
-  // TODO make into a function?
-  const details = parseOutput(py.stdout);
+  const details = execPython(pyPath, command);
 
   if (details === undefined) {
     // TODO Show button to display output instead of showing it automatically?
