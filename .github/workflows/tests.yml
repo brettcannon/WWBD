@@ -22,14 +22,9 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-vesion }}
-          cache: "pip"
-          cache-dependency-path: "**/requirements-dev.txt"
-
-      - name: "Install dependencies"
-        run: python -m pip install -r requirements-dev.txt
 
       - name: "Run tests"
-        run: python -m pytest python-src/tests
+        run: pipx run pytest python-src/tests
 
   typescript-tests:
     name: "TypeScript Tests"
