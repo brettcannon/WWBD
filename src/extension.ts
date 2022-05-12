@@ -217,15 +217,11 @@ export function execPython(
   pyPath: string,
   command: string[]
 ): PythonPayload | undefined {
-  // Create a custom environment variable collection to force Python to use UTF-8.
-  const pyEnv: NodeJS.ProcessEnv = {};
-  Object.assign(pyEnv, process.env);
-  pyEnv.PYTHONUTF8 = "1";
+  // TODO Use `PYTHONUTF8` once Python 3.7 is EOL (issue #19).
   // TODO make asynchronous?: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processspawncommand-args-options
   const py = child_process.spawnSync(pyPath, command, {
     encoding: "utf-8",
     stdio: ["ignore", "pipe", "pipe"],
-    env: pyEnv,
   });
 
   // TODO Build up stdout and stderr into a buffer dynamically to get proper interleaving.
@@ -255,8 +251,7 @@ async function createEnvironment(
   _token: vscode.CancellationToken
 ): Promise<void> {
   // Get the workspace.
-  // TODO be smarter in the face of multi-root workspaces.
-  // TODO make into a function?
+  // XXX be smarter in the face of multi-root workspaces.
   const workspaceDir = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 
   if (workspaceDir === undefined) {
@@ -276,7 +271,6 @@ async function createEnvironment(
   }
 
   // Check that `.venv` does not already exist.
-  // TODO make into a function?
   const venvDirectory = path.join(workspaceDir, ".venv");
 
   if (fs.existsSync(venvDirectory)) {
@@ -306,7 +300,6 @@ async function createEnvironment(
     }
   }
 
-  // TODO make into a function?
   let selectedEnvPath =
     await pythonExtension.environment.getActiveEnvironmentPath();
 
@@ -350,7 +343,6 @@ async function createEnvironment(
   outputChannel.appendLine(`interpreter: ${pyPath}`);
 
   // Create environment by executing Python code.
-  // TODO make into a function?
   const pythonSrc = path.join(extensionPath, "python-src");
   const command = [pythonSrc, "--workspace", workspaceDir];
   const details = execPython(pyPath, command);
@@ -358,7 +350,7 @@ async function createEnvironment(
   if (details === undefined) {
     // TODO Show button to display output instead of showing it automatically?
     vscode.window.showErrorMessage(
-      "Error during environment creation (JSON output missing)."
+      "Error during environment creation (unable to parse JSON output)."
     );
     outputChannel.show();
     return;
