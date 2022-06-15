@@ -11,7 +11,7 @@ This extension is meant act as a playground for the [Python extension](https://m
 ### `Create Environment` command
 
 1. Use an appropriate interpreter (the selected interpreter, ask the user to use the newest version of Python installed, or ask the user to pick an interpreter).
-1. Create a virtual environment in the workspace: `python -m venv .venv --prompt .`.
+1. Create a virtual environment in the workspace that git will ignore: `python -m venv .venv --prompt . && echo "*" > .venv/.gitignore`.
 2. Find the most appropriate requirements file (file name contains `dev` and `requirements` and ends in `.txt`, or `requirements.txt`).
 3. Install the requirements into the environment: `python -m pip install --requirement <requirements file>`.
 

@@ -3,7 +3,6 @@ import pathlib
 import subprocess
 
 import pytest
-
 import wwbd.venv
 
 
@@ -28,9 +27,13 @@ class TestCreate:
 
     def test_new(self, tmp_path):
         python_path = wwbd.venv.create(tmp_path)
+        venv_path = tmp_path / ".venv"
+        gitignore_path = venv_path / ".gitignore"
 
         assert python_path == wwbd.venv.executable_path(tmp_path / ".venv")
-        assert (tmp_path / ".venv" / "pyvenv.cfg").exists()
+        assert (venv_path / "pyvenv.cfg").exists()
+        assert gitignore_path.exists()
+        assert gitignore_path.read_text(encoding="utf-8") == "*\n"
 
     def test_preexisting(self, tmp_path):
         wwbd.venv.create(tmp_path)
