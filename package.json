@@ -1,6 +1,6 @@
 {
   "name": "wwbd",
-  "version": "2022.0.2",
+  "version": "2022.1.0",
   "publisher": "brettcannon",
   "displayName": "WWBD",
   "description": "What Would Brett Do for Python environments?",
@@ -58,7 +58,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package --yarn"
   },
   "devDependencies": {
     "@types/glob": "^7.2.0",
@@ -71,7 +72,7 @@
     "eslint": "^8.11.0",
     "glob": "^7.2.0",
     "mocha": "^9.2.2",
-    "typescript": "^4.5.5",
-    "vsce": "^2.7.0"
+    "typescript": "4.5.x",
+    "vsce": "2.x"
   }
 }
