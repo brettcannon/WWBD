@@ -23,6 +23,9 @@ def create(workspace):
         prompt = venv_path.stem
         venv.create(venv_path, with_pip=True, prompt=prompt)
 
+    # Have git ignore the entire virtual environment.
+    (venv_path / ".gitignore").write_text("*\n", encoding="utf-8")
+
     return executable_path(venv_path)
 
 
