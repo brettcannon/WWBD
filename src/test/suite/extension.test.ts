@@ -1,6 +1,7 @@
 import * as assert from "node:assert";
 import * as os from "node:os";
 import * as path from "node:path";
+import * as process from "node:process";
 import * as vscode from "vscode";
 import * as wwbd from "../../extension";
 import * as pvsc from "../../pvsc";
@@ -13,6 +14,23 @@ function arrayEquals<T>(a: T[], b: T[]): void {
 
 suite("Unit Tests", function () {
   vscode.window.showInformationMessage("Start all tests.");
+
+  suite("venvExecutable()", function () {
+    test("string", function () {
+      const dir = ".venv";
+
+      const expect =
+        os.platform() === "win32"
+          ? path.join(dir, "Scripts", "python.exe")
+          : path.join(dir, "bin", "python");
+
+      assert.strictEqual(wwbd.venvExecutable(dir), expect);
+    });
+
+    test("undefined", function () {
+      assert.strictEqual(wwbd.venvExecutable(undefined), undefined);
+    });
+  });
 
   suite("isGlobal()", function () {
     const knownKinds = [
@@ -127,17 +145,6 @@ suite("Unit Tests", function () {
     const expected = ["python 1", "python 3"];
 
     arrayEquals(wwbd.filterByPathType(given), expected);
-  });
-
-  test("venvExecutable()", function () {
-    const dir = ".venv";
-
-    const expect =
-      os.platform() === "win32"
-        ? path.join(dir, "Scripts", "python.exe")
-        : path.join(dir, "bin", "python");
-
-    assert.strictEqual(wwbd.venvExecutable(dir), expect);
   });
 
   suite("parseOutput()", function () {
