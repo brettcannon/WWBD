@@ -40,7 +40,13 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:wwbd.createEnvironment"
+    "onCommand:wwbd.createEnvironment",
+    "onLanguage:python",
+    "workspaceContains:*.py",
+    "workspaceContains:mspythonconfig.json",
+    "workspaceContains:pyproject.toml",
+    "workspaceContains:Pipfile",
+    "workspaceContains:requirements.txt"
   ],
   "main": "./out/extension.js",
   "contributes": {

@@ -8,6 +8,10 @@ This extension is meant act as a playground for the [Python extension](https://m
 
 ## Features
 
+### Automatic detection of activated virtual environments
+
+If the `VIRTUAL_ENV` environment variable is set, WWBD will use that to set the selected Python environment.
+
 ### `Create Environment` command
 
 1. Use an appropriate interpreter (the selected interpreter, ask the user to use the newest version of Python installed, or ask the user to pick an interpreter).

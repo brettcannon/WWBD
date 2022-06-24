@@ -3,6 +3,7 @@ import * as child_process from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import * as process from "node:process";
 import * as vscode from "vscode";
 import * as pvsc from "./pvsc";
 
@@ -15,7 +16,21 @@ export interface PythonPayload {
   requirementsFile: string | null;
 }
 
-export function activate(context: vscode.ExtensionContext): void {
+export function venvExecutable(dir: undefined): undefined;
+export function venvExecutable(dir: string): string;
+export function venvExecutable(dir: string | undefined): string | undefined;
+export function venvExecutable(dir: string | undefined): string | undefined {
+  if (dir === undefined) {
+    return undefined;
+  }
+  return os.platform() === "win32"
+    ? path.join(dir, "Scripts", "python.exe")
+    : path.join(dir, "bin", "python");
+}
+
+export async function activate(
+  context: vscode.ExtensionContext
+): Promise<void> {
   let disposable = vscode.commands.registerCommand(
     "wwbd.createEnvironment",
     () =>
@@ -32,6 +47,19 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(disposable);
+
+  const activatedVirtualEnv = venvExecutable(process.env.VIRTUAL_ENV);
+  if (activatedVirtualEnv !== undefined) {
+    outputChannel.appendLine(
+      `$VIRTUAL_ENV is set to ${process.env.VIRTUAL_ENV}`
+    );
+    const pythonExtension = await pvscApi();
+    await pythonExtension?.environment.setActiveEnvironment(
+      activatedVirtualEnv
+    );
+  } else {
+    outputChannel.appendLine("$VIRTUAL_ENV is not set");
+  }
 }
 
 export function deactivate(): void {}
@@ -197,12 +225,6 @@ function noInterpreterSelected(): void {
   vscode.window.showErrorMessage("No interpreter selected.");
 }
 
-export function venvExecutable(dir: string): string {
-  return os.platform() === "win32"
-    ? path.join(dir, "Scripts", "python.exe")
-    : path.join(dir, "bin", "python");
-}
-
 export function parseOutput(output: string): PythonPayload | undefined {
   const jsonMatch = jsonTagRegex.exec(output);
 
@@ -279,17 +301,15 @@ async function createEnvironment(
     if (fs.existsSync(venvInterpreter)) {
       const selectEnvironmentButton = "Select Environment";
 
-      vscode.window
-        .showWarningMessage(
-          "A virtual environment already exists at `.venv`. Would you like to select it and halt environment creation?",
-          selectEnvironmentButton,
-          "Cancel"
-        )
-        .then((selected) => {
-          if (selected === selectEnvironmentButton) {
-            pythonExtension.environment.setActiveEnvironment(venvInterpreter);
-          }
-        });
+      const selected = await vscode.window.showWarningMessage(
+        "A virtual environment already exists at `.venv`. Would you like to select it and halt environment creation?",
+        selectEnvironmentButton,
+        "Cancel"
+      );
+
+      if (selected === selectEnvironmentButton) {
+        await pythonExtension.environment.setActiveEnvironment(venvInterpreter);
+      }
 
       return;
     } else {
