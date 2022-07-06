@@ -53,10 +53,15 @@ export async function activate(
     outputChannel.appendLine(
       `$VIRTUAL_ENV is set to ${process.env.VIRTUAL_ENV}`
     );
-    const pythonExtension = await pvscApi();
-    await pythonExtension?.environment.setActiveEnvironment(
-      activatedVirtualEnv
-    );
+
+    if (fs.existsSync(activatedVirtualEnv)) {
+      const pythonExtension = await pvscApi();
+      await pythonExtension?.environment.setActiveEnvironment(
+        activatedVirtualEnv
+      );
+    } else {
+      outputChannel.appendLine(`${activatedVirtualEnv} does not exist!`);
+    }
   } else {
     outputChannel.appendLine("$VIRTUAL_ENV is not set");
   }
